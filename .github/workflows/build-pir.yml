@@ -1,0 +1,76 @@
+name: Build WLED with PIR Support
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment:
+          - esp32dev
+          - esp32-c3-devkitm-1
+          - d1_mini
+          - nodemcuv2
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Cache PlatformIO
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.platformio
+          .pio
+        key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-pio-
+    
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install platformio
+    
+    - name: Configure PIR Usermod
+      run: |
+        # Add PIR usermod to usermods_list.cpp
+        sed -i '/#include "wled.h"/a #include "../usermods/PIR_sensor_switch/usermod_PIR_sensor_switch.h"' wled00/usermods_list.cpp
+        sed -i '/void registerUsermods()/,/^}/ s/}/  usermods.add(new PIRsensorSwitch());\n}/' wled00/usermods_list.cpp
+    
+    - name: Build firmware
+      run: |
+        pio run -e ${{ matrix.environment }}
+    
+    - name: Rename firmware files
+      run: |
+        mkdir -p output
+        cp .pio/build/${{ matrix.environment }}/firmware.bin output/WLED_${{ matrix.environment }}_PIR.bin || true
+        cp .pio/build/${{ matrix.environment }}/firmware.elf output/WLED_${{ matrix.environment }}_PIR.elf || true
+    
+    - name: Upload firmware artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: WLED-PIR-${{ matrix.environment }}
+        path: output/
+        retention-days: 30
+    
+    - name: Create Release (on tag)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: output/*.bin
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
