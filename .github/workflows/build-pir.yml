@@ -7,6 +7,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+env:
+  WLED_VERSION: 'v0.15.1'  # Change version here
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,11 +22,17 @@ jobs:
           - nodemcuv2_pir
     
     steps:
-    - name: Checkout repository
+    - name: Checkout repository with explicit tag fetch
       uses: actions/checkout@v4
       with:
-        ref: 'v0.15.1'
+        fetch-depth: 0
         submodules: recursive
+    
+    - name: Checkout specific version
+      run: |
+        git fetch --all --tags
+        git checkout tags/${{ env.WLED_VERSION }} -b build-branch
+        git submodule update --init --recursive
     
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -75,13 +84,14 @@ jobs:
       run: |
         mkdir -p output
         BASE_ENV=$(echo "${{ matrix.environment }}" | sed 's/_pir$//')
-        cp .pio/build/${{ matrix.environment }}/firmware.bin output/WLED_${BASE_ENV}_PIR.bin || true
-        cp .pio/build/${{ matrix.environment }}/firmware.elf output/WLED_${BASE_ENV}_PIR.elf || true
+        VERSION=$(echo "${{ env.WLED_VERSION }}" | sed 's/^v//')
+        cp .pio/build/${{ matrix.environment }}/firmware.bin output/WLED_${VERSION}_${BASE_ENV}_PIR.bin || true
+        cp .pio/build/${{ matrix.environment }}/firmware.elf output/WLED_${VERSION}_${BASE_ENV}_PIR.elf || true
     
     - name: Upload firmware artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: WLED-PIR-${{ matrix.environment }}
+        name: WLED-PIR-${{ env.WLED_VERSION }}-${{ matrix.environment }}
         path: output/
         retention-days: 30
     
