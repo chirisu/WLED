@@ -13,10 +13,10 @@ jobs:
     strategy:
       matrix:
         environment:
-          - esp32dev
-          - esp32-c3-devkitm-1
-          - d1_mini
-          - nodemcuv2
+          - esp32dev_pir
+          - esp32-c3-devkitm-1_pir
+          - d1_mini_pir
+          - nodemcuv2_pir
     
     steps:
     - name: Checkout repository
@@ -44,11 +44,27 @@ jobs:
         python -m pip install --upgrade pip
         pip install platformio
     
-    - name: Configure PIR Usermod
+    - name: Create platformio_override.ini with PIR usermod
       run: |
-        # Add PIR usermod to usermods_list.cpp
-        sed -i '/#include "wled.h"/a #include "../usermods/PIR_sensor_switch/usermod_PIR_sensor_switch.h"' wled00/usermods_list.cpp
-        sed -i '/void registerUsermods()/,/^}/ s/}/  usermods.add(new PIRsensorSwitch());\n}/' wled00/usermods_list.cpp
+        cat > platformio_override.ini << 'EOF'
+        # PIR Sensor Usermod Build Configuration
+        
+        [env:esp32dev_pir]
+        extends = env:esp32dev
+        custom_usermods = PIR_sensor_switch
+        
+        [env:esp32-c3-devkitm-1_pir]
+        extends = env:esp32-c3-devkitm-1
+        custom_usermods = PIR_sensor_switch
+        
+        [env:d1_mini_pir]
+        extends = env:d1_mini
+        custom_usermods = PIR_sensor_switch
+        
+        [env:nodemcuv2_pir]
+        extends = env:nodemcuv2
+        custom_usermods = PIR_sensor_switch
+        EOF
     
     - name: Build firmware
       run: |
@@ -57,8 +73,9 @@ jobs:
     - name: Rename firmware files
       run: |
         mkdir -p output
-        cp .pio/build/${{ matrix.environment }}/firmware.bin output/WLED_${{ matrix.environment }}_PIR.bin || true
-        cp .pio/build/${{ matrix.environment }}/firmware.elf output/WLED_${{ matrix.environment }}_PIR.elf || true
+        BASE_ENV=$(echo "${{ matrix.environment }}" | sed 's/_pir$//')
+        cp .pio/build/${{ matrix.environment }}/firmware.bin output/WLED_${BASE_ENV}_PIR.bin || true
+        cp .pio/build/${{ matrix.environment }}/firmware.elf output/WLED_${BASE_ENV}_PIR.elf || true
     
     - name: Upload firmware artifacts
       uses: actions/upload-artifact@v4
