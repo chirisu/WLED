@@ -13,12 +13,11 @@ jobs:
     strategy:
       matrix:
         environment:
-          - esp32dev_pir
-          - esp32c3dev_pir
-          - d1_mini_pir
-          - nodemcuv2_pir
-          - lolin_s2_mini_pir
-          - esp32s3dev_8MB_opi_pir
+          - esp32dev
+          - esp32c3dev
+          - lolin_s2_mini
+          - nodemcuv2
+          - esp8266_2m
     
     steps:
     - name: Checkout WLED repository
@@ -55,39 +54,39 @@ jobs:
         
         [env:esp32dev_pir]
         extends = env:esp32dev
+        build_flags = ${env:esp32dev.build_flags}
         custom_usermods = PIR_sensor_switch
         
         [env:esp32c3dev_pir]
         extends = env:esp32c3dev
-        custom_usermods = PIR_sensor_switch
-        
-        [env:d1_mini_pir]
-        extends = env:d1_mini
-        custom_usermods = PIR_sensor_switch
-        
-        [env:nodemcuv2_pir]
-        extends = env:nodemcuv2
+        build_flags = ${env:esp32c3dev.build_flags}
         custom_usermods = PIR_sensor_switch
         
         [env:lolin_s2_mini_pir]
         extends = env:lolin_s2_mini
+        build_flags = ${env:lolin_s2_mini.build_flags}
         custom_usermods = PIR_sensor_switch
         
-        [env:esp32s3dev_8MB_opi_pir]
-        extends = env:esp32s3dev_8MB_opi
+        [env:nodemcuv2_pir]
+        extends = env:nodemcuv2
+        build_flags = ${env:nodemcuv2.build_flags}
+        custom_usermods = PIR_sensor_switch
+        
+        [env:esp8266_2m_pir]
+        extends = env:esp8266_2m
+        build_flags = ${env:esp8266_2m.build_flags}
         custom_usermods = PIR_sensor_switch
         EOF
     
     - name: Build firmware
       run: |
-        pio run -e ${{ matrix.environment }}
+        pio run -e ${{ matrix.environment }}_pir
     
     - name: Rename firmware files
       run: |
         mkdir -p output
-        BASE_ENV=$(echo "${{ matrix.environment }}" | sed 's/_pir$//')
-        cp .pio/build/${{ matrix.environment }}/firmware.bin output/WLED_${BASE_ENV}_PIR.bin || true
-        cp .pio/build/${{ matrix.environment }}/firmware.elf output/WLED_${BASE_ENV}_PIR.elf || true
+        cp .pio/build/${{ matrix.environment }}_pir/firmware.bin output/WLED_${{ matrix.environment }}_PIR.bin || true
+        cp .pio/build/${{ matrix.environment }}_pir/firmware.elf output/WLED_${{ matrix.environment }}_PIR.elf || true
     
     - name: Upload firmware artifacts
       uses: actions/upload-artifact@v4
