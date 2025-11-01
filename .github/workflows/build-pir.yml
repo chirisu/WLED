@@ -47,6 +47,18 @@ jobs:
         python -m pip install --upgrade pip
         pip install platformio
     
+    - name: Get WLED version
+      id: wled_version
+      run: |
+        # Extract version from package.json or git tag
+        if [ -f package.json ]; then
+          VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+        else
+          VERSION=$(git describe --tags --always)
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "WLED Version: $VERSION"
+    
     - name: Create platformio_override.ini with PIR usermod
       run: |
         cat > platformio_override.ini << 'EOF'
@@ -85,8 +97,10 @@ jobs:
     - name: Rename firmware files
       run: |
         mkdir -p output
-        cp .pio/build/${{ matrix.environment }}_pir/firmware.bin output/WLED_${{ matrix.environment }}_PIR.bin || true
-        cp .pio/build/${{ matrix.environment }}_pir/firmware.elf output/WLED_${{ matrix.environment }}_PIR.elf || true
+        VERSION="${{ steps.wled_version.outputs.version }}"
+        cp .pio/build/${{ matrix.environment }}_pir/firmware.bin output/WLED_${VERSION}_${{ matrix.environment }}_PIR.bin || true
+        cp .pio/build/${{ matrix.environment }}_pir/firmware.elf output/WLED_${VERSION}_${{ matrix.environment }}_PIR.elf || true
+        echo "Built: WLED_${VERSION}_${{ matrix.environment }}_PIR.bin"
     
     - name: Upload firmware artifacts
       uses: actions/upload-artifact@v4
