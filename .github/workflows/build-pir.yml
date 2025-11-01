@@ -8,7 +8,8 @@ on:
   workflow_dispatch:
 
 env:
-  WLED_VERSION: 'v0.15.1'  # Change version here
+  WLED_VERSION: '0_15_x'  # Change version here
+  #WLED_VERSION: 'v0.15.1'  # Change version here
 
 jobs:
   build:
