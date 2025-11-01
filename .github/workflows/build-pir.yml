@@ -14,9 +14,11 @@ jobs:
       matrix:
         environment:
           - esp32dev_pir
-          - esp32-c3-devkitm-1_pir
+          - esp32c3dev_pir
           - d1_mini_pir
           - nodemcuv2_pir
+          - lolin_s2_mini_pir
+          - esp32s3dev_8MB_opi_pir
     
     steps:
     - name: Checkout WLED repository
@@ -55,8 +57,8 @@ jobs:
         extends = env:esp32dev
         custom_usermods = PIR_sensor_switch
         
-        [env:esp32-c3-devkitm-1_pir]
-        extends = env:esp32-c3-devkitm-1
+        [env:esp32c3dev_pir]
+        extends = env:esp32c3dev
         custom_usermods = PIR_sensor_switch
         
         [env:d1_mini_pir]
@@ -65,6 +67,14 @@ jobs:
         
         [env:nodemcuv2_pir]
         extends = env:nodemcuv2
+        custom_usermods = PIR_sensor_switch
+        
+        [env:lolin_s2_mini_pir]
+        extends = env:lolin_s2_mini
+        custom_usermods = PIR_sensor_switch
+        
+        [env:esp32s3dev_8MB_opi_pir]
+        extends = env:esp32s3dev_8MB_opi
         custom_usermods = PIR_sensor_switch
         EOF
     
